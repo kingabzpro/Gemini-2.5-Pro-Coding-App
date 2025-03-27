@@ -4,6 +4,9 @@
 
 This application allows users to upload ZIP files containing code and chat with Google's Gemini 2.5 Pro AI model about the code. The AI can analyze the code, answer questions, and provide insights based on the uploaded files.
 
+![Screenshot 2025-03-28 021114](https://github.com/user-attachments/assets/97ddfd21-cd8d-4b2f-9b71-e4780c8d6e02)
+
+
 ## Features
 
 - **Code Analysis**: Upload ZIP files containing code in various programming languages
