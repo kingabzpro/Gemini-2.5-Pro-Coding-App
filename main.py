@@ -16,6 +16,39 @@ CLIENT = genai.Client(api_key=GOOGLE_API_KEY)
 TITLE = """<h1 align="center">✨ Gemini Code Analysis</h1>"""
 AVATAR_IMAGES = (None, "https://media.roboflow.com/spaces/gemini-icon.png")
 
+# List of supported text extensions (alphabetically sorted)
+TEXT_EXTENSIONS = [
+    ".bat",
+    ".c",
+    ".cfg",
+    ".conf",
+    ".cpp",
+    ".cs",
+    ".css",
+    ".go",
+    ".h",
+    ".html",
+    ".ini",
+    ".java",
+    ".js",
+    ".json",
+    ".jsx",
+    ".md",
+    ".php",
+    ".ps1",
+    ".py",
+    ".rb",
+    ".rs",
+    ".sh",
+    ".toml",
+    ".ts",
+    ".tsx",
+    ".txt",
+    ".xml",
+    ".yaml",
+    ".yml",
+]
+
 
 def extract_text_from_zip(zip_file_path: str) -> Dict[str, str]:
     """
@@ -37,39 +70,8 @@ def extract_text_from_zip(zip_file_path: str) -> Dict[str, str]:
 
             # Skip binary files and focus on text files
             file_ext = os.path.splitext(file_info.filename)[1].lower()
-            text_extensions = [
-                ".py",
-                ".js",
-                ".html",
-                ".css",
-                ".java",
-                ".c",
-                ".cpp",
-                ".h",
-                ".cs",
-                ".php",
-                ".rb",
-                ".go",
-                ".rs",
-                ".ts",
-                ".jsx",
-                ".tsx",
-                ".md",
-                ".txt",
-                ".json",
-                ".xml",
-                ".yaml",
-                ".yml",
-                ".toml",
-                ".ini",
-                ".cfg",
-                ".conf",
-                ".sh",
-                ".bat",
-                ".ps1",
-            ]
 
-            if file_ext in text_extensions:
+            if file_ext in TEXT_EXTENSIONS:
                 try:
                     with zip_ref.open(file_info) as file:
                         content = file.read().decode("utf-8", errors="replace")
@@ -103,40 +105,7 @@ def extract_text_from_single_file(file_path: str) -> Dict[str, str]:
     filename = os.path.basename(file_path)
     file_ext = os.path.splitext(filename)[1].lower()
 
-    # List of supported text extensions
-    text_extensions = [
-        ".py",
-        ".js",
-        ".html",
-        ".css",
-        ".java",
-        ".c",
-        ".cpp",
-        ".h",
-        ".cs",
-        ".php",
-        ".rb",
-        ".go",
-        ".rs",
-        ".ts",
-        ".jsx",
-        ".tsx",
-        ".md",
-        ".txt",
-        ".json",
-        ".xml",
-        ".yaml",
-        ".yml",
-        ".toml",
-        ".ini",
-        ".cfg",
-        ".conf",
-        ".sh",
-        ".bat",
-        ".ps1",
-    ]
-
-    if file_ext in text_extensions:
+    if file_ext in TEXT_EXTENSIONS:
         try:
             with open(file_path, "r", encoding="utf-8", errors="replace") as file:
                 content = file.read()
@@ -454,47 +423,14 @@ text_prompt_component = gr.Textbox(
 upload_zip_button_component = gr.UploadButton(
     label="Upload",
     file_count="multiple",
-    file_types=[".zip"]
-    + [
-        ".py",
-        ".js",
-        ".html",
-        ".css",
-        ".java",
-        ".c",
-        ".cpp",
-        ".h",
-        ".cs",
-        ".php",
-        ".rb",
-        ".go",
-        ".rs",
-        ".ts",
-        ".jsx",
-        ".tsx",
-        ".md",
-        ".txt",
-        ".json",
-        ".xml",
-        ".yaml",
-        ".yml",
-        ".toml",
-        ".ini",
-        ".cfg",
-        ".conf",
-        ".sh",
-        ".bat",
-        ".ps1",
-    ],
+    file_types=[".zip"] + TEXT_EXTENSIONS,
     scale=1,
     min_width=80,
 )
 send_button_component = gr.Button(
     value="Send", variant="primary", scale=1, min_width=80
 )
-reset_button_component = gr.Button(
-    value="Reset", variant="stop", scale=1, min_width=80
-)
+reset_button_component = gr.Button(value="Reset", variant="stop", scale=1, min_width=80)
 
 # Define input lists for button chaining
 user_inputs = [text_prompt_component, chatbot_component]
