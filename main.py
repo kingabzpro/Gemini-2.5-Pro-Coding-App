@@ -13,7 +13,7 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 CLIENT = genai.Client(api_key=GOOGLE_API_KEY)
 
 # General constants for the UI
-TITLE = """<h1 align="center">✨ Gemini Software Engineer</h1>"""
+TITLE = """<h1 align="center">✨ Gemini Code Analysis</h1>"""
 AVATAR_IMAGES = (None, "https://media.roboflow.com/spaces/gemini-icon.png")
 
 
@@ -89,12 +89,70 @@ EXTRACTED_FILES = {}
 CHAT_SESSIONS = {}
 
 
-def upload_zip(files: Optional[List[str]], chatbot: List[Union[dict, gr.ChatMessage]]):
+def extract_text_from_single_file(file_path: str) -> Dict[str, str]:
     """
-    Process uploaded ZIP files: extract text content and append a message to the chat.
+    Extract text content from a single file.
 
     Parameters:
-        files (Optional[List[str]]): List of ZIP file paths.
+        file_path (str): Path to the file.
+
+    Returns:
+        Dict[str, str]: Dictionary mapping filename to its text content.
+    """
+    text_contents = {}
+    filename = os.path.basename(file_path)
+    file_ext = os.path.splitext(filename)[1].lower()
+
+    # List of supported text extensions
+    text_extensions = [
+        ".py",
+        ".js",
+        ".html",
+        ".css",
+        ".java",
+        ".c",
+        ".cpp",
+        ".h",
+        ".cs",
+        ".php",
+        ".rb",
+        ".go",
+        ".rs",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".md",
+        ".txt",
+        ".json",
+        ".xml",
+        ".yaml",
+        ".yml",
+        ".toml",
+        ".ini",
+        ".cfg",
+        ".conf",
+        ".sh",
+        ".bat",
+        ".ps1",
+    ]
+
+    if file_ext in text_extensions:
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="replace") as file:
+                content = file.read()
+                text_contents[filename] = content
+        except Exception as e:
+            text_contents[filename] = f"Error reading file: {str(e)}"
+
+    return text_contents
+
+
+def upload_zip(files: Optional[List[str]], chatbot: List[Union[dict, gr.ChatMessage]]):
+    """
+    Process uploaded files (ZIP or single text files): extract text content and append a message to the chat.
+
+    Parameters:
+        files (Optional[List[str]]): List of file paths.
         chatbot (List[Union[dict, gr.ChatMessage]]): The conversation history.
 
     Returns:
@@ -102,15 +160,68 @@ def upload_zip(files: Optional[List[str]], chatbot: List[Union[dict, gr.ChatMess
     """
     global EXTRACTED_FILES
 
-    for file in files:
+    # Handle multiple file uploads
+    if len(files) > 1:
+        total_files_processed = 0
+        total_files_extracted = 0
+        file_types = set()
+
+        # Process each file
+        for file in files:
+            filename = os.path.basename(file)
+            file_ext = os.path.splitext(filename)[1].lower()
+
+            # Process based on file type
+            if file_ext == ".zip":
+                extracted_files = extract_text_from_zip(file)
+                file_types.add("zip")
+            else:
+                extracted_files = extract_text_from_single_file(file)
+                file_types.add("text")
+
+            if extracted_files:
+                total_files_extracted += len(extracted_files)
+                # Store the extracted content in the global variable
+                EXTRACTED_FILES[filename] = extracted_files
+
+            total_files_processed += 1
+
+        # Create a summary message for multiple files
+        file_types_str = (
+            "files"
+            if len(file_types) > 1
+            else ("ZIP files" if "zip" in file_types else "text files")
+        )
+
+        # Create a list of uploaded file names
+        file_list = "\n".join([f"- {os.path.basename(file)}" for file in files])
+
+        chatbot.append(
+            gr.ChatMessage(
+                role="user",
+                content=f"<p>📚 Multiple {file_types_str} uploaded ({total_files_processed} files)</p><p>Extracted {total_files_extracted} text file(s) in total</p><p>Uploaded files:</p><pre>{file_list}</pre>",
+            )
+        )
+
+    # Handle single file upload (original behavior)
+    elif len(files) == 1:
+        file = files[0]
         filename = os.path.basename(file)
-        extracted_files = extract_text_from_zip(file)
+        file_ext = os.path.splitext(filename)[1].lower()
+
+        # Process based on file type
+        if file_ext == ".zip":
+            extracted_files = extract_text_from_zip(file)
+            file_type_msg = "📦 ZIP file"
+        else:
+            extracted_files = extract_text_from_single_file(file)
+            file_type_msg = "📄 File"
 
         if not extracted_files:
             chatbot.append(
                 gr.ChatMessage(
                     role="user",
-                    content=f"<p>📦 ZIP file uploaded: {filename}, but no text files were found.</p>",
+                    content=f"<p>{file_type_msg} uploaded: {filename}, but no text content was found or the file format is not supported.</p>",
                 )
             )
         else:
@@ -118,7 +229,7 @@ def upload_zip(files: Optional[List[str]], chatbot: List[Union[dict, gr.ChatMess
             chatbot.append(
                 gr.ChatMessage(
                     role="user",
-                    content=f"<p>📦 ZIP file uploaded: {filename}</p><p>Extracted {len(extracted_files)} text files:</p><pre>{file_list}</pre>",
+                    content=f"<p>{file_type_msg} uploaded: {filename}</p><p>Extracted {len(extracted_files)} text file(s):</p><pre>{file_list}</pre>",
                 )
             )
 
@@ -202,8 +313,12 @@ def send_to_gemini(chatbot: List[Union[dict, gr.ChatMessage]]):
     last_user_msg = user_messages[-1]
     prompt = get_message_content(last_user_msg)
 
-    # Skip if the last message was about uploading a ZIP file
-    if "📦 ZIP file uploaded:" in prompt:
+    # Skip if the last message was about uploading a file (ZIP, single file, or multiple files)
+    if (
+        "📦 ZIP file uploaded:" in prompt
+        or "📄 File uploaded:" in prompt
+        or "📚 Multiple files uploaded" in prompt
+    ):
         chatbot.append(
             gr.ChatMessage(
                 role="assistant",
@@ -296,6 +411,31 @@ def send_to_gemini(chatbot: List[Union[dict, gr.ChatMessage]]):
     return chatbot
 
 
+def reset_app(chatbot):
+    """
+    Reset the app by clearing the chat context and removing any uploaded files.
+
+    Parameters:
+        chatbot (List[Union[dict, gr.ChatMessage]]): The conversation history.
+
+    Returns:
+        List[Union[dict, gr.ChatMessage]]: A fresh conversation history.
+    """
+    global EXTRACTED_FILES, CHAT_SESSIONS
+
+    # Clear the global variables
+    EXTRACTED_FILES = {}
+    CHAT_SESSIONS = {}
+
+    # Reset the chatbot with a welcome message
+    return [
+        gr.ChatMessage(
+            role="assistant",
+            content="App has been reset. You can start a new conversation or upload new files.",
+        )
+    ]
+
+
 # Define the Gradio UI components
 chatbot_component = gr.Chatbot(
     label="Gemini 2.5 Pro",
@@ -314,12 +454,46 @@ text_prompt_component = gr.Textbox(
 upload_zip_button_component = gr.UploadButton(
     label="Upload",
     file_count="multiple",
-    file_types=[".zip"],
+    file_types=[".zip"]
+    + [
+        ".py",
+        ".js",
+        ".html",
+        ".css",
+        ".java",
+        ".c",
+        ".cpp",
+        ".h",
+        ".cs",
+        ".php",
+        ".rb",
+        ".go",
+        ".rs",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".md",
+        ".txt",
+        ".json",
+        ".xml",
+        ".yaml",
+        ".yml",
+        ".toml",
+        ".ini",
+        ".cfg",
+        ".conf",
+        ".sh",
+        ".bat",
+        ".ps1",
+    ],
     scale=1,
     min_width=80,
 )
 send_button_component = gr.Button(
-    value="Send", variant="primary", scale=0.3, min_width=80
+    value="Send", variant="primary", scale=1, min_width=80
+)
+reset_button_component = gr.Button(
+    value="Reset", variant="stop", scale=1, min_width=80
 )
 
 # Define input lists for button chaining
@@ -333,6 +507,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
             text_prompt_component.render()
             send_button_component.render()
             upload_zip_button_component.render()
+            reset_button_component.render()
 
     # When the Send button is clicked, first process the user text then send to Gemini
     send_button_component.click(
@@ -364,6 +539,14 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     upload_zip_button_component.upload(
         fn=upload_zip,
         inputs=[upload_zip_button_component, chatbot_component],
+        outputs=[chatbot_component],
+        queue=False,
+    )
+
+    # Handle Reset button clicks
+    reset_button_component.click(
+        fn=reset_app,
+        inputs=[chatbot_component],
         outputs=[chatbot_component],
         queue=False,
     )

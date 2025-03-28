@@ -12,9 +12,10 @@ This application allows users to upload ZIP files containing code and chat with 
 - **Code Analysis**: Upload ZIP files containing code in various programming languages
 - **Interactive Chat**: Ask questions about your code and receive detailed responses
 - **Streaming Responses**: Get real-time responses as the AI generates them
-- **Multi-file Support**: Analyze multiple files at once from a ZIP archive
+- **Multi-file Support**: Analyze multiple files at once from a ZIP archive or upload multiple individual files
 - **Context Preservation**: The AI maintains context of your code throughout the conversation
 - **Support for Multiple Languages**: Handles various programming languages and file types
+- **Reset Functionality**: Clear the conversation and uploaded files to start fresh
 
 ## Requirements
 
@@ -55,9 +56,10 @@ This will launch a Gradio web interface on `http://localhost:9595`.
 
 ### Analyzing Code
 
-1. **Upload Code**: Click the "Upload" button to select a ZIP file containing your code files.
+1. **Upload Code**: Click the "Upload" button to select a ZIP file or multiple individual code files.
 2. **Ask Questions**: Type your questions about the code in the text input field.
 3. **Get Responses**: The AI will analyze your code and respond to your questions.
+4. **Reset**: Click the "Reset" button to clear the conversation and uploaded files when you want to start fresh.
 
 ### Supported File Types
 
@@ -97,5 +99,7 @@ The application can extract and analyze text-based files with the following exte
 ## Notes
 
 - The application requires a valid Google API Key with access to the Gemini 2.5 Pro model.
+- The application uses the `gemini-2.5-pro-exp-03-25` model version.
 - Large code files may take longer to process.
 - The application runs locally and does not store your code or conversations on external servers.
+- The UI uses the Ocean theme from Gradio for a pleasant user experience.
