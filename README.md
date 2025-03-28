@@ -2,7 +2,8 @@
 
 ## Overview
 
-This application allows users to upload ZIP files containing code and chat with Google's Gemini 2.5 Pro AI model about the code. The AI can analyze the code, answer questions, and provide insights based on the uploaded files.
+This application enables users to upload files, including multiple files or even a ZIP archive containing an entire project, to a chat-based interface. Users can ask questions about their project, troubleshoot issues, or improve their codebase. Unlike traditional AI code editors that struggle with large contexts due to their limitations, Gemini 2.5 Pro, with its long context window, can effectively analyze and resolve issues across an entire project.
+
 
 ![image1](https://github.com/user-attachments/assets/b6631fb3-b662-48d4-89fa-dcf6cfb37d92)
 
