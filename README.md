@@ -4,6 +4,8 @@
 
 This application enables users to upload files, including multiple files or even a ZIP archive containing an entire project, to a chat-based interface. Users can ask questions about their project, troubleshoot issues, or improve their codebase. Unlike traditional AI code editors that struggle with large contexts due to their limitations, Gemini 2.5 Pro, with its long context window, can effectively analyze and resolve issues across an entire project.
 
+> Read the tutorial to learn more: https://www.datacamp.com/tutorial/gemini-2-5-pro-api
+
 
 ![image1](https://github.com/user-attachments/assets/b6631fb3-b662-48d4-89fa-dcf6cfb37d92)
 
